@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import os
+import random
 
 class DatasetLoader:
     def __init__(self, preprocessors=None):
@@ -8,25 +9,31 @@ class DatasetLoader:
         
         if self.preprocessors is None:
             self.preprocessors = []
-        
+            
     
-    def load(self, ImagePaths, verbose=-1):
+    def load(self, ImagePaths, phases):
         data = []
         labels = []
-        
-        for (i, imagePath) in enumerate(ImagePaths):
-            image = cv.imread(imagePath)
-            label = imagePath.split(os.path.sep)[-2]
-            
-            if self.preprocessors is not None:
-                for p in self.preprocessors:
-                    image = p.preprocess(image)
-                
-            data.append(image)
-            labels.append(label)
-        
-            if verbose > 0 and i > 0 and (i+1) % verbose == 0:
-                 print("::: [INFO] processed {}/{} :::".format(i+1, len(ImagePaths)))
-        
+        random.shuffle(ImagePaths)
+        for phase in phases:
+            phase_paths = []
+            counter = 0
+            for j in range(len(ImagePaths)):
+                if counter == 9000:
+                    break
+                if ImagePaths[j].split(os.path.sep)[-2] == phase:
+                    phase_paths.append(ImagePaths[j])
+                    counter += 1
+            for (i, phase_path) in enumerate(phase_paths):
+                label = phase_path.split(os.path.sep)[-2]
+                image = cv.imread(phase_path)
+                if self.preprocessors is not None:
+                    for p in self.preprocessors:
+                        image = p.preprocess(image)
+                if (i%200) == 0:
+                    print("::: [INFO] Processed Image of Phase {} :::".format(phase))   
+                    print(phase_path) 
+                data.append(image)
+                labels.append(label)
         return (np.array(data), np.array(labels))
             
